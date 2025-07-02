@@ -1,32 +1,47 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Mail, Lock, Eye, EyeOff, Shield, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building2, Mail, Shield, Users, Chrome } from 'lucide-react';
 
 export default function SignIn() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignIn = async () => {
-    setIsLoading(true);
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email.includes('admin')) {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/employee/dashboard');
+  useEffect(() => {
+    // Check if user is already signed in
+    const checkSession = async () => {
+      const session = await getSession();
+      if (session?.user) {
+        if (session.user.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/employee/dashboard');
+        }
       }
-    }, 2000);
+    };
+    checkSession();
+  }, [router]);
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signIn('google', {
+        callbackUrl: '/auth/callback',
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        console.error('Sign in error:', result.error);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -56,134 +71,58 @@ export default function SignIn() {
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-gray-600">
-              Sign in to access your workspace
+              Sign in with your company Google account
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="employee" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="employee" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Employee
-                </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="employee" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employee-email">Company Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="employee-email"
-                      type="email"
-                      placeholder="employee@epicallayouts.com"
-                      className="pl-10 h-12"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="employee-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      className="pl-10 pr-10 h-12"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleSignIn}
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing in...
-                    </div>
-                  ) : (
-                    'Sign in as Employee'
-                  )}
-                </Button>
-              </TabsContent>
-              
-              <TabsContent value="admin" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Admin Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="admin-email"
-                      type="email"
-                      placeholder="admin@epicallayouts.com"
-                      className="pl-10 h-12"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="admin-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      className="pl-10 pr-10 h-12"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleSignIn}
-                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing in...
-                    </div>
-                  ) : (
-                    'Sign in as Admin'
-                  )}
-                </Button>
-              </TabsContent>
-            </Tabs>
+          <CardContent className="space-y-6">
+            {/* Role Information */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-blue-800">Employee</h3>
+                <p className="text-xs text-blue-600">Access your workspace</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-purple-800">Admin</h3>
+                <p className="text-xs text-purple-600">Manage organization</p>
+              </div>
+            </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
-                Forgot your password?{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Reset here
-                </a>
+            {/* Domain Restriction Notice */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">Domain Restriction</span>
+              </div>
+              <p className="text-xs text-amber-700">
+                Only <strong>@citchennai.net</strong> email addresses are allowed to access this system.
               </p>
+            </div>
+
+            {/* Google Sign In Button */}
+            <Button 
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full h-12 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin"></div>
+                  Signing in...
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Chrome className="h-5 w-5 text-blue-500" />
+                  <span className="font-medium">Continue with Google</span>
+                </div>
+              )}
+            </Button>
+
+            {/* Security Notice */}
+            <div className="text-center text-xs text-gray-500">
+              <p>🔒 Secure authentication powered by Google OAuth</p>
+              <p className="mt-1">Your data is protected and encrypted</p>
             </div>
           </CardContent>
         </Card>

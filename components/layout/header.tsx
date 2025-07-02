@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { signOut, useSession } from 'next-auth/react';
 
 interface HeaderProps {
   title: string;
@@ -23,7 +24,13 @@ interface HeaderProps {
   };
 }
 
-export function Header({ title, user }: HeaderProps) {
+export function Header({ title }: HeaderProps) {
+  const { data: session } = useSession();
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/' });
+  };
+
   return (
     <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
       <div>
@@ -54,15 +61,15 @@ export function Header({ title, user }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage src={session?.user?.image || ''} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                  {user?.name?.charAt(0) || 'U'}
+                  {session?.user?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
-              {user && (
+              {session?.user && (
                 <div className="text-left hidden sm:block">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className="text-sm font-medium">{session.user.name}</p>
+                  <p className="text-xs text-gray-500">{session.user.email}</p>
                 </div>
               )}
             </Button>
@@ -79,7 +86,7 @@ export function Header({ title, user }: HeaderProps) {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem className="text-red-600" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </DropdownMenuItem>
