@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import dbConnect from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
 export const authOptions: NextAuthOptions = {
@@ -13,26 +13,32 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google') {
+        const email = user.email;
+        
         // Check if email is from allowed domain
-        if (!user.email?.endsWith('@citchennai.net')) {
+        if (!email?.endsWith('@citchennai.net')) {
           return false;
         }
 
         try {
-          await dbConnect();
+          await connectDB();
           
           // Check if user exists
-          let existingUser = await User.findOne({ email: user.email });
+          let existingUser = await User.findOne({ email });
           
           if (!existingUser) {
             // Create new user
-            const isAdmin = user.email === 'ravikrishnaj25@gmail.com' || user.email === 'admin@citchennai.net';
+            const isAdmin = email === 'ravikrishnaj25@gmail.com';
             
             existingUser = await User.create({
-              email: user.email,
               name: user.name,
+              email: user.email,
               image: user.image,
               role: isAdmin ? 'admin' : 'employee',
+              designation: 'Not Set',
+              department: 'Not Set',
+              contactNumber: '',
+              joiningDate: new Date(),
               isActive: true,
             });
           }
@@ -43,12 +49,13 @@ export const authOptions: NextAuthOptions = {
           return false;
         }
       }
+      
       return false;
     },
     async jwt({ token, user }) {
       if (user) {
         try {
-          await dbConnect();
+          await connectDB();
           const dbUser = await User.findOne({ email: user.email });
           if (dbUser) {
             token.role = dbUser.role;
